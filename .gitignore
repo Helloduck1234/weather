@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+data/
+reports/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+KILL

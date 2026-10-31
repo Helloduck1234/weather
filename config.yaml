@@ -1,0 +1,110 @@
+# Weather bot settings. Everything here runs on paper unless you pass --live.
+
+venues: [us, intl]            # us = Polymarket US, intl = polymarket.com
+db_path: data/weatherbot.sqlite
+report_dir: reports
+bankroll_usd: 1000            # starting paper bankroll, per venue
+max_lead_days: 2              # price today plus this many days ahead
+max_obs_age_hours: 3          # skip today's markets if the station has gone quiet
+order_ttl_minutes: 30         # a resting limit order lives this long before fallback
+
+strategy:
+  edge_threshold: 0.05        # model probability - best ask - fee
+  kelly_fraction: 0.15        # must stay within 0.10-0.25
+  min_price: 0.02
+  max_price: 0.98
+  max_trade_usd: 25
+  max_day_usd: 100
+  max_event_usd: 40           # buckets in one event are correlated
+  max_depth_share: 0.15       # share of visible depth at prices that still have edge
+  execution: maker_first      # maker_first | taker
+
+model:
+  spread_inflation: 1.3       # ensembles are underdispersed
+  kernel_sigma_start_c: 0.7   # smoothing per member, before observations count
+  kernel_sigma_end_c: 0.25    # and once they dominate
+  obs_start_hour: 6           # local hour observations start to count
+  obs_full_hour: 17           # local hour they fully count
+  anchor_tau_hours: 6         # how fast a member's current error decays
+  edge_shift_c: 0.25          # shift used to find probabilities that hinge on a bucket edge
+  prob_epsilon: 0.01          # shrink toward uniform so nothing is ever certain
+  min_horizon_coverage: 0.75
+  # NWS days only: chance the sensor peaked 0, 1, 2, 3, 4F above the highest report.
+  # Measured over 112 station-days in October 2026.
+  sensor_gap_f: [0.46, 0.41, 0.08, 0.03, 0.02]
+
+forecast:
+  models: [gfs025, ecmwf_ifs025]
+  max_age_hours: 18           # how long a run may be reused if a refresh fails
+  past_days: 1
+  forecast_days: 5
+
+bias:
+  window_days: 30
+  shrink_days: 3              # correction weight is n / (n + shrink_days)
+  min_days: 7                 # no trades at a station until each model has this many settled days
+
+live:
+  # Set this to true only after you have confirmed in the Polymarket US app
+  # that your account can trade temperature markets from Illinois.
+  jurisdiction_confirmed: false
+  bankroll_usd: 100
+  daily_loss_limit_usd: 20
+  max_order_usd: 10
+  max_day_usd: 25
+  kill_file: data/KILL
+
+# Markets name their own station. A station that is not listed here is skipped
+# with a logged reason, so a new city needs a line here with its time zone.
+stations:
+  CYYZ: {name: "Toronto", tz: America/Toronto, lat: 43.679, lon: -79.629, elev_m: 171}
+  EDDM: {name: "Munich", tz: Europe/Berlin, lat: 48.348, lon: 11.813, elev_m: 445}
+  EFHK: {name: "Helsinki", tz: Europe/Helsinki, lat: 60.327, lon: 24.957, elev_m: 56}
+  EGLC: {name: "London", tz: Europe/London, lat: 51.505, lon: 0.055, elev_m: 10}
+  EHAM: {name: "Amsterdam", tz: Europe/Amsterdam, lat: 52.315, lon: 4.79, elev_m: -2}
+  EPWA: {name: "Warsaw", tz: Europe/Warsaw, lat: 52.163, lon: 20.961, elev_m: 107}
+  FACT: {name: "Cape Town", tz: Africa/Johannesburg, lat: -33.965, lon: 18.602, elev_m: 48}
+  KATL: {name: "Atlanta", tz: America/New_York, lat: 33.62972, lon: -84.44223, elev_m: 309}
+  KAUS: {name: "Austin", tz: America/Chicago, lat: 30.1831, lon: -97.68063, elev_m: 148}
+  KDAL: {name: "Dallas", tz: America/Chicago, lat: 32.83836, lon: -96.83584, elev_m: 148}
+  KDEN: {name: "Denver", tz: America/Denver, lat: 39.84657, lon: -104.65623, elev_m: 1656}
+  KHOU: {name: "Houston", tz: America/Chicago, lat: 29.64582, lon: -95.28214, elev_m: 13}
+  KLAX: {name: "Los Angeles", tz: America/Los_Angeles, lat: 33.93817, lon: -118.3866, elev_m: 30}
+  KLGA: {name: "New York City (LaGuardia)", tz: America/New_York, lat: 40.77945, lon: -73.88027, elev_m: 9}
+  KMDW: {name: "Chicago (Midway)", tz: America/Chicago, lat: 41.78412, lon: -87.75515, elev_m: 186}
+  KMIA: {name: "Miami", tz: America/New_York, lat: 25.78806, lon: -80.31692, elev_m: 1}
+  KNYC: {name: "New York City (Central Park)", tz: America/New_York, lat: 40.779, lon: -73.9692, elev_m: 33}
+  KORD: {name: "Chicago (O'Hare)", tz: America/Chicago, lat: 41.96017, lon: -87.93161, elev_m: 202}
+  KPHL: {name: "Philadelphia", tz: America/New_York, lat: 39.87328, lon: -75.22682, elev_m: 2}
+  KSEA: {name: "Seattle", tz: America/Los_Angeles, lat: 47.44467, lon: -122.31442, elev_m: 115}
+  KSFO: {name: "San Francisco", tz: America/Los_Angeles, lat: 37.61961, lon: -122.36561, elev_m: 2}
+  LEMD: {name: "Madrid", tz: Europe/Madrid, lat: 40.466, lon: -3.555, elev_m: 589}
+  LFPB: {name: "Paris", tz: Europe/Paris, lat: 48.967, lon: 2.428, elev_m: 50}
+  LIMC: {name: "Milan", tz: Europe/Rome, lat: 45.631, lon: 8.728, elev_m: 221}
+  LLBG: {name: "Tel Aviv", tz: Asia/Jerusalem, lat: 32.011, lon: 34.887, elev_m: 35}
+  LTAC: {name: "Ankara", tz: Europe/Istanbul, lat: 40.128, lon: 32.995, elev_m: 952}
+  LTFM: {name: "Istanbul", tz: Europe/Istanbul, lat: 41.262, lon: 28.74, elev_m: 99}
+  MMMX: {name: "Mexico City", tz: America/Mexico_City, lat: 19.436, lon: -99.072, elev_m: 2224}
+  MPMG: {name: "Panama City", tz: America/Panama, lat: 8.967, lon: -79.555, elev_m: 6}
+  NZWN: {name: "Wellington", tz: Pacific/Auckland, lat: -41.331, lon: 174.806, elev_m: 12}
+  OEJN: {name: "Jeddah", tz: Asia/Riyadh, lat: 21.685, lon: 39.166, elev_m: 8}
+  OPKC: {name: "Karachi", tz: Asia/Karachi, lat: 24.902, lon: 67.139, elev_m: 20}
+  RCSS: {name: "Taipei", tz: Asia/Taipei, lat: 25.069, lon: 121.552, elev_m: 8}
+  RJTT: {name: "Tokyo", tz: Asia/Tokyo, lat: 35.553, lon: 139.781, elev_m: 5}
+  RKPK: {name: "Busan", tz: Asia/Seoul, lat: 35.179, lon: 128.938, elev_m: 3}
+  RKSI: {name: "Seoul", tz: Asia/Seoul, lat: 37.469, lon: 126.451, elev_m: 7}
+  RPLL: {name: "Manila", tz: Asia/Manila, lat: 14.507, lon: 121.004, elev_m: 15}
+  SAEZ: {name: "Buenos Aires", tz: America/Argentina/Buenos_Aires, lat: -34.822, lon: -58.536, elev_m: 16}
+  SBGR: {name: "Sao Paulo", tz: America/Sao_Paulo, lat: -23.432, lon: -46.469, elev_m: 745}
+  UUWW: {name: "Moscow", tz: Europe/Moscow, lat: 55.592, lon: 37.261, elev_m: 195}
+  VILK: {name: "Lucknow", tz: Asia/Kolkata, lat: 26.761, lon: 80.889, elev_m: 121}
+  WMKK: {name: "Kuala Lumpur", tz: Asia/Kuala_Lumpur, lat: 2.747, lon: 101.714, elev_m: 21}
+  WSSS: {name: "Singapore", tz: Asia/Singapore, lat: 1.368, lon: 103.982, elev_m: 17}
+  ZBAA: {name: "Beijing", tz: Asia/Shanghai, lat: 40.082, lon: 116.603, elev_m: 31}
+  ZGGG: {name: "Guangzhou", tz: Asia/Shanghai, lat: 23.392, lon: 113.307, elev_m: 11}
+  ZGSZ: {name: "Shenzhen", tz: Asia/Shanghai, lat: 22.639, lon: 113.803, elev_m: 18}
+  ZHHH: {name: "Wuhan", tz: Asia/Shanghai, lat: 30.783, lon: 114.205, elev_m: 33}
+  ZSPD: {name: "Shanghai", tz: Asia/Shanghai, lat: 31.146, lon: 121.8, elev_m: 4}
+  ZSQD: {name: "Qingdao", tz: Asia/Shanghai, lat: 36.362, lon: 120.087, elev_m: 2}
+  ZUCK: {name: "Chongqing", tz: Asia/Shanghai, lat: 29.718, lon: 106.639, elev_m: 416}
+  ZUUU: {name: "Chengdu", tz: Asia/Shanghai, lat: 30.576, lon: 103.95, elev_m: 494}

@@ -1,0 +1,38 @@
+[project]
+name = "weatherbot"
+version = "0.1.0"
+description = "Paper-trading bot for Polymarket daily high-temperature markets"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tzdata>=2024.1",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+live = ["cryptography>=42"]
+
+[project.scripts]
+weatherbot = "weatherbot.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "respx>=0.21",
+    "cryptography>=42",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/weatherbot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error"]

@@ -1,0 +1,3 @@
+# One paper cycle every 15 minutes, as an alternative to the launchd job.
+# Change the path. Install with: crontab -e
+*/15 * * * * cd /Users/you/weatherbot && mkdir -p data && .venv/bin/weatherbot run >> data/run.log 2>&1
