@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -69,10 +69,23 @@ def test_clock_date_ignores_dst_on_the_standard_clock():
 
 
 @pytest.mark.parametrize("clock", ["local_dst", "local_standard"])
-def test_clock_date_turns_over_exactly_at_the_end_of_the_window(clock):
-    _, end = day_window_utc(date(2026, 7, 1), "America/New_York", clock)
-    assert clock_date(end - 1, "America/New_York", clock) == date(2026, 7, 1)
-    assert clock_date(end, "America/New_York", clock) == date(2026, 7, 2)
+@pytest.mark.parametrize(
+    "day, tz",
+    [
+        (date(2026, 7, 1), "America/New_York"),
+        (date(2026, 3, 8), "America/New_York"),  # 23-hour DST day
+        (date(2026, 11, 1), "America/New_York"),  # 25-hour DST day
+        (date(2026, 4, 5), "Australia/Lord_Howe"),  # 30-minute fall back
+        (date(2026, 10, 4), "Australia/Lord_Howe"),  # 30-minute spring forward
+        (date(2026, 10, 31), "Asia/Kolkata"),  # Half-hour zone without DST
+    ],
+)
+def test_clock_date_matches_day_window_boundaries(clock, day, tz):
+    start, end = day_window_utc(day, tz, clock)
+    assert clock_date(start - 1, tz, clock) == day - timedelta(days=1)
+    assert clock_date(start, tz, clock) == day
+    assert clock_date(end - 1, tz, clock) == day
+    assert clock_date(end, tz, clock) == day + timedelta(days=1)
 
 
 @pytest.mark.parametrize(
