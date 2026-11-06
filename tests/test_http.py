@@ -110,3 +110,27 @@ def test_long_retry_after_cannot_hold_up_the_run():
     respx.get(URL).mock(side_effect=[httpx.Response(429, headers={"Retry-After": "3600"}), httpx.Response(200, json=[1])])
     Http(sleep=waits.append).get(URL)
     assert waits == [60.0]
+
+
+@pytest.mark.parametrize("header", ["-1", "NaN", "Infinity", "-Infinity", "invalid"])
+@respx.mock
+def test_invalid_retry_after_falls_back_to_backoff(header):
+    waits = []
+    route = respx.get(URL).mock(side_effect=[
+        httpx.Response(429, headers={"Retry-After": header}),
+        httpx.Response(200, json=[1]),
+    ])
+    assert Http(backoff=2.0, sleep=waits.append).get(URL) == [1]
+    assert waits == [2.0]
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_zero_retry_after_retries_without_delay():
+    waits = []
+    respx.get(URL).mock(side_effect=[
+        httpx.Response(429, headers={"Retry-After": "0"}),
+        httpx.Response(200, json=[1]),
+    ])
+    assert Http(sleep=waits.append).get(URL) == [1]
+    assert waits == [0.0]

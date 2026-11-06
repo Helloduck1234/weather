@@ -1,6 +1,7 @@
 """Small JSON HTTP client with retries. Every API call goes through here."""
 from __future__ import annotations
 
+import math
 import time
 from typing import Any, Callable
 
@@ -68,6 +69,9 @@ def _decode(response: httpx.Response, url: str) -> Any:
 def _retry_wait(header: str | None, backoff: float) -> float:
     """Retry-After can also be a date, which isn't worth parsing to save a few seconds."""
     try:
-        return min(float(header), _MAX_RETRY_WAIT)
+        wait = float(header)
     except (TypeError, ValueError):
         return backoff
+    if not math.isfinite(wait) or wait < 0:
+        return backoff
+    return min(wait, _MAX_RETRY_WAIT)
