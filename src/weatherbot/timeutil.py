@@ -34,6 +34,8 @@ def _standard_offset(day: date, zone: ZoneInfo) -> timedelta:
 
 def clock_date(unix: int, tz: str, clock: str) -> date:
     """The calendar date a moment falls on under this day clock."""
+    if clock not in ("local_dst", "local_standard"):
+        raise ValueError(f"unknown day clock: {clock}")
     t = datetime.fromtimestamp(unix, ZoneInfo(tz))
     return (t - (t.dst() or timedelta(0))).date() if clock == "local_standard" else t.date()
 

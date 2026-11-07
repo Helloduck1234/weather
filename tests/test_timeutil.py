@@ -52,6 +52,13 @@ def test_day_window_rejects_unknown_clock():
         day_window_utc(date(2026, 1, 1), "UTC", "solar")
 
 
+@pytest.mark.parametrize("clock", ["solar", "", "LOCAL_DST"])
+def test_clock_date_rejects_unknown_clock(clock):
+    # An invalid clock must not silently select the DST calendar date.
+    with pytest.raises(ValueError, match="unknown day clock"):
+        clock_date(utc(2026, 7, 2, 4, 30), "America/New_York", clock)
+
+
 def test_clock_date_differs_from_utc_date_across_midnight():
     # 03:00Z on Oct 31 is still the evening of Oct 30 in Chicago.
     assert clock_date(utc(2026, 10, 31, 3), "America/Chicago", "local_dst") == date(2026, 10, 30)
