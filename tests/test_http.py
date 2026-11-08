@@ -134,3 +134,31 @@ def test_zero_retry_after_retries_without_delay():
     ])
     assert Http(sleep=waits.append).get(URL) == [1]
     assert waits == [0.0]
+
+
+@pytest.mark.parametrize("status", [429, 500, 502, 503, 504])
+@pytest.mark.parametrize("retries", [0, 1, 3])
+@respx.mock
+def test_transient_status_respects_retry_budget_and_backoff(status, retries):
+    waits = []
+    route = respx.get(URL).mock(return_value=httpx.Response(status))
+    with pytest.raises(HttpError) as err:
+        Http(retries=retries, backoff=2.0, sleep=waits.append).get(URL)
+    assert err.value.status == status
+    assert route.call_count == retries + 1
+    # Exhausting the budget must not add a final sleep before raising.
+    assert waits == [2.0 * 2**attempt for attempt in range(retries)]
+
+
+@pytest.mark.parametrize("error", [httpx.ConnectError, httpx.ReadTimeout])
+@pytest.mark.parametrize("retries", [0, 1, 3])
+@respx.mock
+def test_transport_error_respects_retry_budget_and_backoff(error, retries):
+    waits = []
+    route = respx.get(URL).mock(side_effect=error("unavailable"))
+    with pytest.raises(HttpError) as err:
+        Http(retries=retries, backoff=2.0, sleep=waits.append).get(URL)
+    assert err.value.status == 0
+    assert isinstance(err.value.__cause__, error)
+    assert route.call_count == retries + 1
+    assert waits == [2.0 * 2**attempt for attempt in range(retries)]
