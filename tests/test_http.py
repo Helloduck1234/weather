@@ -162,3 +162,39 @@ def test_transport_error_respects_retry_budget_and_backoff(error, retries):
     assert isinstance(err.value.__cause__, error)
     assert route.call_count == retries + 1
     assert waits == [2.0 * 2**attempt for attempt in range(retries)]
+
+
+@pytest.mark.parametrize("failure", ["server", "transport"])
+@respx.mock
+def test_get_retries_preserve_query_parameters_and_headers(failure):
+    first = httpx.Response(503) if failure == "server" else httpx.ConnectError("unavailable")
+    route = respx.get(URL).mock(side_effect=[first, httpx.Response(200, json=[1])])
+    params = {"station": "KNYC", "units": "fahrenheit"}
+    headers = {"X-Request-ID": "forecast-test"}
+
+    assert client().get(URL, params=params, headers=headers) == [1]
+    assert route.call_count == 2
+    for call in route.calls:
+        assert dict(call.request.url.params) == params
+        assert call.request.headers["X-Request-ID"] == "forecast-test"
+        assert call.request.headers["user-agent"].startswith("weatherbot/")
+    assert params == {"station": "KNYC", "units": "fahrenheit"}
+    assert headers == {"X-Request-ID": "forecast-test"}
+
+
+@pytest.mark.parametrize("failure", ["server", "transport"])
+@respx.mock
+def test_post_retries_preserve_json_body_and_headers(failure):
+    first = httpx.Response(503) if failure == "server" else httpx.ConnectError("unavailable")
+    route = respx.post(URL).mock(side_effect=[first, httpx.Response(200, json=[1])])
+    body = [{"token_id": "1"}, {"token_id": "2"}]
+    headers = {"X-Request-ID": "book-test"}
+
+    assert client().post(URL, body, headers=headers) == [1]
+    assert route.call_count == 2
+    for call in route.calls:
+        assert call.request.content == b'[{"token_id":"1"},{"token_id":"2"}]'
+        assert call.request.headers["content-type"] == "application/json"
+        assert call.request.headers["X-Request-ID"] == "book-test"
+    assert body == [{"token_id": "1"}, {"token_id": "2"}]
+    assert headers == {"X-Request-ID": "book-test"}
