@@ -149,6 +149,12 @@ uv run pytest
 
 There is one test file per module. Responses in `tests/fixtures/` were recorded from the real APIs, and HTTP is mocked with `respx`, so no network or keys are needed. Warnings count as failures.
 
+### SOCKS proxy test setup
+
+Mocked HTTP requests do not skip HTTPX client initialization. If the test environment has a SOCKS proxy configured, creating a client can fail with `ImportError: Using SOCKS proxy, but the 'socksio' package is not installed.` before a mocked request runs.
+
+Install HTTPX's `socks` extra (`httpx[socks]`, which includes `socksio`) in the same environment used to run pytest, through your approved dependency setup. Then rerun `uv run pytest tests/test_http.py` before the full suite. Do not disable a required proxy to work around the error. This is a test-environment dependency issue, not evidence that a remote API failed.
+
 Live code is tested against fakes built from the API docs. Treat those fakes as a description of the docs, not of the exchange.
 
 New behaviour should come with a test that fails first. A test only counts if it fails when the behaviour breaks, so when a rule matters, break it on purpose and see that a test notices.
