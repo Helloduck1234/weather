@@ -21,7 +21,7 @@ Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0) and the [A
 
 ## Setup
 
-Needs [uv](https://docs.astral.sh/uv/). Run everything from the project folder.
+Needs Python 3.11 or newer and [uv](https://docs.astral.sh/uv/), as specified in `pyproject.toml`. Run everything from the project folder.
 
 ```bash
 git clone https://github.com/Helloduck1234/weather.git ~/weatherbot
@@ -276,7 +276,11 @@ The docs left these open, so the code guards them rather than assuming they hold
 uv run pytest
 ```
 
-The tests use responses recorded from the real APIs, so they need no network and no keys. [Architecture](docs/architecture.md) covers the code layout and how to extend it.
+The tests use responses recorded from the real APIs, so the test cases need no API network access and no keys. Installing Python or dependencies is a separate setup step and may require network access; complete setup before testing in an offline environment.
+
+If HTTP tests fail during client initialization with a missing `socksio` error, see [SOCKS proxy test setup](docs/architecture.md#socks-proxy-test-setup). Mocked requests still initialize the HTTP client, so this dependency can be needed even without real API calls.
+
+[Architecture](docs/architecture.md) covers the code layout and how to extend it.
 
 ## Where this differs from the original brief
 
