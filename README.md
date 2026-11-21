@@ -153,6 +153,14 @@ Late in the day the market still sees more than the bot does. No free source has
 
 ## Reading the report
 
+To regenerate the paper report from the local SQLite ledger without running a new cycle or contacting APIs:
+
+```bash
+.venv/bin/weatherbot report --mode paper
+```
+
+Run this after setup. It uses `db_path` and `report_dir` in `config.yaml` (defaults: `data/weatherbot.sqlite` and `reports/`). Add `--venue us` or `--venue intl` to rebuild just one venue. This does not fetch data or settle any new results.
+
 `reports/report-<venue>-<mode>.md` and `calibration-<venue>-<mode>.png`.
 
 - **Realized P&L, and the 90% interval from resampling days.** Buckets in one event are correlated, so days are the real sample size. An interval that includes zero means no evidence yet.
